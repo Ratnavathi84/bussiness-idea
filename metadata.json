@@ -1,0 +1,6 @@
+{
+  "name": "Digital Travel Journal",
+  "description": "A modern, immersive, and visually stunning digital travel journal to document, organize, and share your journeys.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
