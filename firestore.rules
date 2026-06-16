@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(ownerId) {
+      return isSignedIn() && request.auth.uid == ownerId;
+    }
+
+    // Path Variable Hardening (ID Poisoning Guard)
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation helper for trips representation
+    function isValidTrip(data) {
+      return data.keys().hasAll(['id', 'title', 'location', 'latitude', 'longitude', 'startDate', 'endDate', 'coverImage', 'ownerId', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 11
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 256
+        && data.location is string && data.location.size() <= 256
+        && (data.latitude is float || data.latitude is int)
+        && (data.longitude is float || data.longitude is int)
+        && data.startDate is string && data.startDate.size() <= 64
+        && data.endDate is string && data.endDate.size() <= 64
+        && data.coverImage is string && data.coverImage.size() <= 2048
+        && data.ownerId == request.auth.uid
+        && (data.isPublic == null || data.isPublic is bool);
+    }
+
+    // Rules for: trips
+    match /trips/{tripId} {
+      allow get: if isSignedIn() && (existing().isPublic == true || isOwner(existing().ownerId));
+      allow list: if isSignedIn() && (resource.data.isPublic == true || resource.data.ownerId == request.auth.uid);
+      
+      allow create: if isSignedIn() 
+        && isValidId(tripId) 
+        && isValidTrip(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn() 
+        && isValidId(tripId)
+        && isValidTrip(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'location', 'latitude', 'longitude', 'startDate', 'endDate', 'coverImage', 'isPublic', 'updatedAt'])
+        );
+
+      allow delete: if isSignedIn() && isOwner(existing().ownerId);
+    }
+
+    // Validation helper for chatMessage representation
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'role', 'content', 'createdAt'])
+        && data.keys().size() == 5
+        && data.id is string && data.id.size() <= 128
+        && data.ownerId == request.auth.uid
+        && data.role in ['user', 'ai']
+        && data.content is string && data.content.size() <= 10000;
+    }
+
+    // Rules for: users/{userId}/chats/{chatId}
+    match /users/{userId}/chats/{chatId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      
+      allow create: if isSignedIn()
+        && isOwner(userId)
+        && isValidId(chatId)
+        && isValidChatMessage(incoming())
+        && incoming().createdAt == request.time;
+
+      allow update: if false;
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+  }
+}

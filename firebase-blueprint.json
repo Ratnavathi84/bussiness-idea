@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "trip": {
+      "title": "Trip Journal Entry",
+      "description": "Represents an individual curated travel journal entry (volume) captured by a traveler.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique identifier of the journal entry." },
+        "title": { "type": "string", "description": "The editorial title of the journey." },
+        "location": { "type": "string", "description": "The geographical name of the location visited." },
+        "coordinates": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number", "description": "The latitude of the destination." },
+            "lng": { "type": "number", "description": "The longitude of the destination." }
+          },
+          "required": ["lat", "lng"],
+          "description": "Spatial coordinates on the world map."
+        },
+        "startDate": { "type": "string", "description": "The starting date of the journey." },
+        "endDate": { "type": "string", "description": "The ending date of the journey." },
+        "coverImage": { "type": "string", "description": "URL to the high-contrast cover photo." },
+        "isPublic": { "type": "boolean", "description": "Whether this journal entry is public to other travelers." },
+        "ownerId": { "type": "string", "description": "The UID of the user who owns this journal entry." },
+        "createdAt": { "type": "string", "description": "Server timestamp of document creation." },
+        "updatedAt": { "type": "string", "description": "Server timestamp of document update." }
+      },
+      "required": ["id", "title", "location", "coordinates", "startDate", "endDate", "coverImage", "ownerId", "createdAt", "updatedAt"]
+    },
+    "chatMessage": {
+      "title": "Assistant Chat Message",
+      "description": "Represents a conversational message exchanged between the traveler and the Editorial AI Assistant.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the message." },
+        "ownerId": { "type": "string", "description": "The UID of the user participating in the chat." },
+        "role": { "type": "string", "enum": ["user", "ai"], "description": "The sender of the message." },
+        "content": { "type": "string", "description": "The text content of the message." },
+        "createdAt": { "type": "string", "description": "Timestamp indicating when the message was sent." }
+      },
+      "required": ["id", "ownerId", "role", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/trips/{tripId}": {
+      "schema": "trip",
+      "description": "Global collection containing all traveler journal volumes."
+    },
+    "/users/{userId}/chats/{chatId}": {
+      "schema": "chatMessage",
+      "description": "Subcollection under each user mapping their historical dialog with the Travel Assistant."
+    }
+  }
+}

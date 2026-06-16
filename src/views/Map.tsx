@@ -5,6 +5,7 @@ import { APIProvider, Map as GoogleMap, AdvancedMarker, Pin, InfoWindow, useAdva
 import { mockTrips } from '../data';
 import { Trip } from '../types';
 import { MapPin, Calendar, Compass } from 'lucide-react';
+import { useFirebase } from '../context/FirebaseContext';
 
 const API_KEY =
   process.env.GOOGLE_MAPS_PLATFORM_KEY ||
@@ -43,6 +44,9 @@ const MarkerWithInfoWindow: React.FC<{ trip: Trip }> = ({ trip }) => {
 }
 
 export function TravelMap() {
+  const { trips } = useFirebase();
+  const tripsToDisplay = trips.length > 0 ? trips : mockTrips;
+
   if (!hasValidKey) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 text-center h-full">
@@ -91,7 +95,7 @@ export function TravelMap() {
           style={{ width: '100%', height: '100%' }}
           disableDefaultUI={true}
         >
-          {mockTrips.map(trip => (
+          {tripsToDisplay.map(trip => (
             <MarkerWithInfoWindow key={trip.id} trip={trip} />
           ))}
         </GoogleMap>

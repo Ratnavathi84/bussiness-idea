@@ -1,6 +1,7 @@
-import { Map, LayoutDashboard, PenTool, Image as ImageIcon, MapPin, Sparkles, BarChart3, User, LogOut } from 'lucide-react';
+import { Map, LayoutDashboard, PenTool, Image as ImageIcon, MapPin, Sparkles, BarChart3, User, LogOut, LogIn } from 'lucide-react';
 import { ViewType } from '../types';
 import { motion } from 'motion/react';
+import { useFirebase } from '../context/FirebaseContext';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -8,6 +9,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentView, onChangeView }: SidebarProps) {
+  const { user, login, logout } = useFirebase();
+
   const navItems: { id: ViewType; label: string; icon: any }[] = [
     { id: 'dashboard', label: 'My Journeys', icon: LayoutDashboard },
     { id: 'map', label: 'Travel Map', icon: Map },
@@ -19,11 +22,29 @@ export function Sidebar({ currentView, onChangeView }: SidebarProps) {
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
+  const handleSignOutClick = async () => {
+    try {
+      await logout();
+      onChangeView('landing');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSignInClick = async () => {
+    try {
+      await login();
+      onChangeView('dashboard');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <motion.aside 
       initial={{ x: -250 }}
       animate={{ x: 0 }}
-      className="w-64 h-screen hidden md:flex flex-col border-r border-ink/10 glass-panel-dark sticky top-0"
+      className="w-64 h-screen hidden md:flex flex-col border-r border-ink/10 glass-panel-dark sticky top-0 font-sans"
     >
       <div className="p-6 pt-10">
         <h1 className="font-display text-3xl font-bold tracking-tight text-ink">
@@ -53,14 +74,48 @@ export function Sidebar({ currentView, onChangeView }: SidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 mt-auto border-t border-ink/5">
-        <button 
-          onClick={() => onChangeView('landing')}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-ink/50 hover:text-ink hover:bg-ink/5 transition-colors"
-        >
-          <LogOut size={18} />
-          <span className="font-medium text-sm">Sign Out</span>
-        </button>
+      <div className="p-4 mt-auto border-t border-ink/5 flex flex-col space-y-4">
+        {user ? (
+          <div className="flex items-center justify-between p-2 bg-ink/5 rounded-2xl border border-ink/5">
+            <div className="flex items-center space-x-3 min-w-0">
+              {user.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt={user.displayName || "Avatar"} 
+                  className="w-9 h-9 rounded-full object-cover border border-ink/10"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-sage/20 text-sage flex items-center justify-center font-display font-medium text-sm">
+                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-ink truncate leading-tight">
+                  {user.displayName || 'Traveler'}
+                </p>
+                <p className="text-[10px] text-ink/40 truncate leading-none mt-1">
+                  Verified Vault
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={handleSignOutClick}
+              title="Sign Out"
+              className="p-2 text-ink/40 hover:text-terra hover:bg-terra/10 rounded-xl transition-colors"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={handleSignInClick}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-sage/10 text-sage hover:bg-sage/20 rounded-xl transition-all font-semibold text-xs uppercase tracking-wider"
+          >
+            <LogIn size={14} />
+            <span>Connect Firebase</span>
+          </button>
+        )}
       </div>
     </motion.aside>
   );

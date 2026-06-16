@@ -1,8 +1,25 @@
 import { motion } from 'motion/react';
 import { ViewType } from '../types';
 import { Compass, Camera, Sparkles, Map } from 'lucide-react';
+import { useFirebase } from '../context/FirebaseContext';
 
 export function LandingPage({ onStart }: { onStart: () => void }) {
+  const { user, login } = useFirebase();
+
+  const handleStartWithGoogle = async () => {
+    if (user) {
+      onStart();
+    } else {
+      try {
+        await login();
+        onStart();
+      } catch (error) {
+        console.warn('Sign-in cancelled or failed. Entering as Guest.', error);
+        onStart();
+      }
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full flex bg-paper overflow-hidden font-sans">
       <div className="flex-1 flex flex-col justify-center px-12 md:px-24 lg:px-32 z-10 max-w-4xl relative">
@@ -25,13 +42,24 @@ export function LandingPage({ onStart }: { onStart: () => void }) {
             A minimalist digital sanctuary to document, reflect, and piece together the memories of your most profound journeys.
           </p>
 
-          <button 
-            onClick={onStart}
-            className="group px-8 py-4 bg-ink text-paper hover:bg-ink/90 transition-all rounded-full flex items-center space-x-4 shadow-xl shadow-ink/10"
-          >
-            <span className="font-medium text-lg tracking-wide">Open Journal</span>
-            <span className="transform group-hover:translate-x-1 transition-transform">→</span>
-          </button>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+            <button 
+              onClick={handleStartWithGoogle}
+              className="group px-8 py-4 bg-ink text-paper hover:bg-ink/90 transition-all rounded-full flex items-center justify-center space-x-4 shadow-xl shadow-ink/10 cursor-pointer"
+            >
+              <span className="font-medium text-lg tracking-wide">
+                {user ? "Open My Journal" : "Open with Google"}
+              </span>
+              <span className="transform group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+            
+            <button 
+              onClick={onStart}
+              className="px-6 py-4 border border-ink/10 hover:border-ink/30 text-ink/60 hover:text-ink transition-colors rounded-full text-sm font-semibold tracking-wider uppercase cursor-pointer"
+            >
+              Explore as Guest
+            </button>
+          </div>
         </motion.div>
 
         <motion.div 
